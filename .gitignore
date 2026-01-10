@@ -208,4 +208,5 @@ __marimo__/
 
 # Davasets
 /datasets
-
+files/processed/*
+files/processed
