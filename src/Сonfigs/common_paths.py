@@ -30,6 +30,7 @@ DV_CROPPED_FACES_DIR = DV_DATASET / "photos_cropped"
 
 # Папка для процессинга датасетов
 PROCESSED_DIR = PROJECT_ROOT / "files" / "processed"
+PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
 
 # CSV-файлы
 DV_RAW_CSV = PROCESSED_DIR / "dv_dataset_raw.csv"
