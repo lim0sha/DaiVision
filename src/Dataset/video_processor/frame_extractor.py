@@ -7,17 +7,16 @@ from src.Сonfigs.common_paths import CV2_MODELS_DIR
 from src.Dataset.video_processor.sharpness_calculator import get_sharpness_score
 
 
-def extract_best_face_frame(video_path, step=5, model_path=None):
+def extract_best_face_frame(video_path, step=5):
     cap = cv2.VideoCapture(str(video_path))
     fps = cap.get(cv2.CAP_PROP_FPS) or 30
 
-    if model_path is None:
-        model_path = CV2_MODELS_DIR / "blaze_face_short_range.tflite"
-        if not model_path.exists():
-            raise FileNotFoundError(
-                f"Default face detection model not found at {model_path}. "
-                "Please ensure 'blaze_face_short_range.tflite' is placed in the 'models' subdirectory."
-            )
+    model_path = CV2_MODELS_DIR / "blaze_face_short_range.tflite"
+    if not model_path.exists():
+        raise FileNotFoundError(
+            f"Default face detection model not found at {model_path}. "
+            "Please ensure 'blaze_face_short_range.tflite' is placed in the 'models' subdirectory."
+        )
 
     options = FaceDetectorOptions(
         base_options=BaseOptions(model_asset_path=str(model_path)),
