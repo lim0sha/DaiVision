@@ -1,2 +1,20 @@
 # DaiVision
-An ML service that learns a user’s visual preferences from likes in the “Daivinchik” dating Telegram app. It analyzes profile images and predicts whether a profile should be liked, enabling automated profile selection.
+
+--- 
+
+DaiVision — это сервис машинного обучения, который изучает визуальные предпочтения пользователя на основе лайков в Telegram-приложении для знакомств "Дайвинчик".
+
+Основные возможности
+- Анализ визуальных предпочтений - изучение того, какие типы профилей пользователь предпочитает
+- Обработка изображений профилей - автоматический анализ фотографий из профилей
+- Прогнозирование лайков - предсказание вероятности того, что пользователь поставит лайк
+- Автоматический отбор профилей - возможность автоматизации процесса выбора подходящих профилей
+
+--- 
+## Документация на других языках
+For English documentation - [here](docs/src/README_EN.md)
+
+---
+## License
+Этот проект распространяется под лицензией MIT - см. файл [LICENSE.md](docs/src/LICENSE.md) для получения подробной информации.
+
