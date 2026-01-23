@@ -207,7 +207,8 @@ marimo/_lsp/
 __marimo__/
 
 # Davasets
-/datasets
+datasets/*
+!datasets/INFO.md
 files/processed/*
 files/processed
 /files
