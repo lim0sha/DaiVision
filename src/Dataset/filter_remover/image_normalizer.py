@@ -9,6 +9,17 @@
 import cv2
 import numpy as np
 
+from src.Сonfigs.dv_constants import (
+    BRIGHTNESS_HISTOGRAM_THRESHOLD,
+    BRIGHT_RATIO_THRESHOLD,
+    MEAN_BRIGHTNESS_THRESHOLD,
+    CLAHE_CLIP_LIMIT,
+    CLAHE_TILE_GRID_SIZE,
+    SATURATION_FACTOR,
+    COLOR_CORRECTION_FACTOR,
+    GAMMA_CORRECTION,
+)
+
 
 def remove_artificial_filters_adaptive(image: np.ndarray) -> np.ndarray:
     """
@@ -37,30 +48,24 @@ def remove_artificial_filters_adaptive(image: np.ndarray) -> np.ndarray:
     
     # Вычисляем гистограмму канала L (яркость)
     hist, _ = np.histogram(l, bins=256, range=(0, 256))
-    # Подсчитываем количество очень ярких пикселей (>230)
-    bright_pixels = np.sum(hist[230:])
+    bright_pixels = np.sum(hist[BRIGHTNESS_HISTOGRAM_THRESHOLD:])
     total_pixels = l.size
     bright_ratio = bright_pixels / total_pixels
 
-    # Вычисляем среднюю яркость
     mean_brightness = np.mean(l)
-    # Проверяем, есть ли чрезмерная яркость
     has_extreme_bright = (
-        bright_ratio > 0.150 or
-        mean_brightness > 150
+        bright_ratio > BRIGHT_RATIO_THRESHOLD or
+        mean_brightness > MEAN_BRIGHTNESS_THRESHOLD
     )
 
     # Если нет чрезмерной яркости, возвращаем копию исходного изображения
     if not has_extreme_bright:
         return image.copy()
     
-    # Применяем CLAHE (Contrast Limited Adaptive Histogram Equalization) 
-    # для улучшения контраста канала яркости
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=CLAHE_CLIP_LIMIT, tileGridSize=CLAHE_TILE_GRID_SIZE)
     l_norm = clahe.apply(l)
     
-    # Корректируем насыщенность цветов
-    saturation_factor = 0.5
+    saturation_factor = SATURATION_FACTOR
     a = (a.astype(np.float32) - 128) * saturation_factor + 128
     b = (b.astype(np.float32) - 128) * saturation_factor + 128
     a = np.clip(a, 0, 255).astype(np.uint8)
@@ -74,9 +79,8 @@ def remove_artificial_filters_adaptive(image: np.ndarray) -> np.ndarray:
     yuv = cv2.cvtColor(result, cv2.COLOR_BGR2YUV)
     y, u, v = cv2.split(yuv)
 
-    # Корректируем цветовые каналы U и V
-    u_centered = (u.astype(np.float32) - 128) * 0.7 + 128
-    v_centered = (v.astype(np.float32) - 128) * 0.7 + 128
+    u_centered = (u.astype(np.float32) - 128) * COLOR_CORRECTION_FACTOR + 128
+    v_centered = (v.astype(np.float32) - 128) * COLOR_CORRECTION_FACTOR + 128
     u_centered = np.clip(u_centered, 0, 255).astype(np.uint8)
     v_centered = np.clip(v_centered, 0, 255).astype(np.uint8)
 
@@ -84,8 +88,7 @@ def remove_artificial_filters_adaptive(image: np.ndarray) -> np.ndarray:
     yuv_balanced = cv2.merge([y, u_centered, v_centered])
     result = cv2.cvtColor(yuv_balanced, cv2.COLOR_YUV2BGR)
     
-    # Применяем гамма-коррекцию для улучшения яркости
-    gamma = 1.4
+    gamma = GAMMA_CORRECTION
     inv_gamma = 1.0 / gamma
     table = np.array([((i / 255.0) ** inv_gamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
     result = cv2.LUT(result, table)

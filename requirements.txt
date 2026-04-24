@@ -5,6 +5,7 @@ mediapipe==0.10.31
 numpy==1.26.4
 opencv-python==4.11.0.86
 pandas==2.3.3
+pandas-stubs==3.0.0.260204
 pycparser==2.23
 python-dateutil==2.9.0.post0
 pytz==2025.2

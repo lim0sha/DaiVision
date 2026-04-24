@@ -12,9 +12,16 @@ from mediapipe.tasks.python import BaseOptions
 from mediapipe.tasks.python.vision import FaceDetectorOptions, RunningMode, FaceDetector
 
 from src.Сonfigs.common_paths import CV2_MODELS_DIR
+from src.Сonfigs.dv_constants import (
+    MIN_DETECTION_CONFIDENCE,
+    MIN_CROP_CONFIDENCE,
+    MIN_CROP_SIZE,
+    MIN_CROP_SIZE_FALLBACK,
+    FACE_SCALE_RETRY,
+)
 
 
-def crop_face_from_image(image_path: str, output_path: str, min_size=100):
+def crop_face_from_image(image_path: str, output_path: str, min_size=MIN_CROP_SIZE):
     """
     Обрезает изображение до области лица и сохраняет результат.
 
@@ -75,7 +82,7 @@ def crop_face_from_image(image_path: str, output_path: str, min_size=100):
         options = FaceDetectorOptions(
             base_options=BaseOptions(model_asset_path=str(model_path)),
             running_mode=RunningMode.IMAGE,
-            min_detection_confidence=0.5
+            min_detection_confidence=MIN_DETECTION_CONFIDENCE
         )
 
         # Создаем детектор и выполняем обнаружение
@@ -85,8 +92,8 @@ def crop_face_from_image(image_path: str, output_path: str, min_size=100):
 
             # Если лица не найдены, увеличиваем изображение и пробуем снова
             if not detections:
-                scaled = cv2.resize(image, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
-                detections = detect_on_image(scaled, scale=2.0)
+                scaled = cv2.resize(image, None, fx=FACE_SCALE_RETRY, fy=FACE_SCALE_RETRY, interpolation=cv2.INTER_CUBIC)
+                detections = detect_on_image(scaled, scale=FACE_SCALE_RETRY)
 
             # Если так и не нашли лиц, возвращаем False
             if not detections:
@@ -96,7 +103,7 @@ def crop_face_from_image(image_path: str, output_path: str, min_size=100):
             best = max(detections, key=lambda d: d['score'])
 
             # Проверяем минимальный порог уверенности
-            if best['score'] < 0.6:  # fine-tune если необходимо и в cropped-датасете много мусора (не лиц)
+            if best['score'] < MIN_CROP_CONFIDENCE:
                 return False
 
             # Вычисляем границы области с лицом
