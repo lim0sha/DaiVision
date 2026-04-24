@@ -12,8 +12,10 @@ from pathlib import Path
 from src.Сonfigs.common_paths import (
     DV_FRAMES_UNFILTERED_CSV,
     DV_CROPPED_FACES_DIR,
-    DV_DATASET
+    DV_DATASET,
+    DV_FRAMES_CROPPED_CSV,
 )
+from src.Сonfigs.dv_constants import MIN_CROP_SIZE_FALLBACK
 from src.Dataset.cropper.face_cropper import crop_face_from_image
 
 
@@ -93,20 +95,16 @@ def process_dataset_with_face_cropping():
         new_filename = f"{stem}_cropped{suffix}"
         dst_path = DV_CROPPED_FACES_DIR / new_filename
         
-        # Обрезаем изображение до области с лицом
-        success = crop_face_from_image(str(src_path), str(dst_path), min_size=80)
+        success = crop_face_from_image(str(src_path), str(dst_path), min_size=MIN_CROP_SIZE_FALLBACK)
 
-        # Если лицо успешно найдено и обрезано, добавляем строку в выходной датасет
         if success:
             new_row = row.copy()
             new_row["image_path"] = f"photos_cropped/{new_filename}"
             kept_rows.append(new_row)
     
-    # Создаем выходной датафрейм и сохраняем в CSV
     df_out = pd.DataFrame(kept_rows)
-    output_csv = DV_FRAMES_UNFILTERED_CSV.parent / "dv_dataset_frames_cropped_filtered.csv"
-    df_out.to_csv(output_csv, index=False)
+    df_out.to_csv(DV_FRAMES_CROPPED_CSV, index=False)
 
-    print(f"[INFO] Filtered dataset saved to: {output_csv}")
+    print(f"[INFO] Filtered dataset saved to: {DV_FRAMES_CROPPED_CSV}")
     print(f"[INFO] Kept {len(df_out)} rows out of {len(df)}")
     print(f"[INFO] Cropped faces saved to: {DV_CROPPED_FACES_DIR}")

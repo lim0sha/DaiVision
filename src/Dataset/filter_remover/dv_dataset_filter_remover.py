@@ -54,30 +54,30 @@ def process_dataset_with_filter_removal():
         raise ValueError("CSV must contain 'image_path' column.")
 
     new_image_paths = []
-    # Определяем директорию с оригинальными фото
     DV_PHOTOS_DIR = DV_PHOTOS_EXTRACTED_DIR.parent / "photos"
+    UNFILTERED_DIR = DV_PHOTOS_EXTRACTED_DIR.parent / "photos_unfiltered"
 
-    # Обрабатываем каждую строку датасета
     for _, row in df.iterrows():
         rel_path = row["image_path"]
         clean_rel_path = rel_path
+        src_dir = None
         
-        # Определяем относительный путь в зависимости от типа изображения
-        if rel_path.startswith("photos/"):
-            clean_rel_path = rel_path[len("photos/"):]
+        if rel_path.startswith("photos_unfiltered/"):
+            clean_rel_path = rel_path[len("photos_unfiltered/"):]
+            src_dir = UNFILTERED_DIR
         elif rel_path.startswith("photos_extracted/"):
             clean_rel_path = rel_path[len("photos_extracted/"):]
+            src_dir = DV_PHOTOS_EXTRACTED_DIR
+        elif rel_path.startswith("photos/"):
+            clean_rel_path = rel_path[len("photos/"):]
+            src_dir = DV_PHOTOS_DIR
 
-        # Пытаемся найти изображение в оригинальной директории
-        src_path = DV_PHOTOS_DIR / clean_rel_path
+        if src_dir is None:
+            print(f"[WARNING] Unknown path prefix: {rel_path}")
+            new_image_paths.append(rel_path)
+            continue
 
-        if not src_path.exists():
-            # Если не нашли, пробуем в директории извлеченных фото
-            src_path = DV_PHOTOS_EXTRACTED_DIR / clean_rel_path
-            if not src_path.exists():
-                print(f"[WARNING] Image not found in 'photos' nor 'photos_extracted': {rel_path}")
-                new_image_paths.append(rel_path)
-                continue
+        src_path = src_dir / clean_rel_path
 
         # Загружаем изображение
         image = cv2.imread(str(src_path))
@@ -105,7 +105,7 @@ def process_dataset_with_filter_removal():
         stem = Path(filename).stem
         suffix = Path(filename).suffix
         new_filename = f"{stem}_unfiltered{suffix}"
-        dst_path = DV_PHOTOS_UNFILTERED_DIR / new_filename
+        dst_path = UNFILTERED_DIR / new_filename
 
         # Сохраняем обработанное изображение
         cv2.imwrite(str(dst_path), normalized_image)
@@ -118,4 +118,4 @@ def process_dataset_with_filter_removal():
     df_out.to_csv(DV_FRAMES_UNFILTERED_CSV, index=False)
 
     print(f"[INFO] Processed dataset saved to: {DV_FRAMES_UNFILTERED_CSV}")
-    print(f"[INFO] Processed images saved to: {DV_PHOTOS_UNFILTERED_DIR}")
+    print(f"[INFO] Processed images saved to: {UNFILTERED_DIR}")

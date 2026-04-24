@@ -11,11 +11,12 @@ import mediapipe as mp
 from mediapipe.tasks.python.core.base_options import BaseOptions
 from mediapipe.tasks.python.vision import FaceDetector, FaceDetectorOptions, RunningMode
 from src.Сonfigs.common_paths import CV2_MODELS_DIR
+from src.Сonfigs.dv_constants import MIN_DETECTION_CONFIDENCE, VIDEO_FRAME_STEP
 
 from src.Dataset.video_processor.sharpness_calculator import get_sharpness_score
 
 
-def extract_best_face_frame(video_path, step=5):
+def extract_best_face_frame(video_path, step=VIDEO_FRAME_STEP):
     """
     Извлекает лучший кадр с лицом из видеофайла.
 
@@ -49,7 +50,7 @@ def extract_best_face_frame(video_path, step=5):
     options = FaceDetectorOptions(
         base_options=BaseOptions(model_asset_path=str(model_path)),
         running_mode=RunningMode.VIDEO,
-        min_detection_confidence=0.5
+        min_detection_confidence=MIN_DETECTION_CONFIDENCE
     )
 
     # Переменные для отслеживания лучшего кадра
