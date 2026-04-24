@@ -1,104 +1,75 @@
-"""
-Модуль для построения датасета из JSON-файла экспорта чата Telegram.
-
-Этот модуль предоставляет класс DatasetBuilder для парсинга JSON-файла
-экспорта чата с ботом "Дайвинчик" и создания датасета с метками лайков/дизлайков.
-"""
-
 import json
+
 import pandas as pd
+
+from src.Сonfigs.common_paths import DV_RAW_CSV
 
 
 class DatasetBuilder:
-    """
-    Класс для построения датасета из JSON-файла экспорта чата с ботом "Дайвинчик".
+    def __init__(self, path_to_json: str):
+        self.jsonFd = open(path_to_json, "r", encoding="utf-8")
+        self.data = json.load(self.jsonFd)
 
-    Класс анализирует сообщения из JSON-файла, извлекает фотографии профилей
-    и метки пользовательских реакций (лайк/дизлайк), формируя структурированный датасет.
-    """
+        self.bot_id = 0
+        self.user_id = 0
 
-    def __init__(self, path_to_json):
-        """
-        Инициализирует DatasetBuilder с указанным JSON-файлом.
+        for message in self.data["messages"]:
+            if message.get("from") == "Дайвинчик | Leo – знакомства, общение и новые друзья":
+                self.bot_id = message.get("from_id")
+            else:
+                self.user_id = message.get("from_id")
 
-        Args:
-            path_to_json (str): Путь к JSON-файлу экспорта чата
-        """
-        with open(path_to_json, "r", encoding="utf-8") as f:
-            self.data = json.load(f)
+            if self.bot_id != 0 and self.user_id != 0:
+                break
 
-        # Имя бота, которое отправляет профили пользователей
-        self.bot_name = "Дайвинчик | Leo – знакомства, общение и новые друзья"
+        self.parse_exception = ["🚀 Смотреть анкеты", "Нет", "1 🚀", "1 👍"]
 
-        # Исключения - текстовые сообщения, которые не должны обрабатываться как реакции
-        self.parse_exception = {"🚀 Смотреть анкеты", "Нет", "1 🚀", "1 👍"}
-
-    def build_dataset(self):
-        """
-        Строит датасет из сообщений чата.
-
-        Метод анализирует сообщения из JSON-файла и создает датафрейм pandas
-        с информацией о профилях и реакциях пользователя. Берутся только сообщения
-        от бота (с фотографиями профилей) и ответы пользователя (лайки/дизлайки).
-
-        Returns:
-            pd.DataFrame: Датафрейм с колонками ["profile_id", "image_path", "image_index", "profile_liked"],
-                          где profile_liked принимает значения 0 (дизлайк) или 1 (лайк)
-        """
+    def build_dataset(self) -> pd.DataFrame:
         rows = []
 
-        current_profile_photos = []  # Список фотографий текущего профиля
-        profile_id = 0  # ID профиля
+        temp_files = []
+        profile_id = 0
 
-        for msg in self.data["messages"]:
-            # Обработка сообщений от бота (содержащих фотографии профилей)
-            if msg.get("from") == self.bot_name:
-                if "photo" in msg:
-                    current_profile_photos.append(msg["photo"])
-                elif "file" in msg:
-                    current_profile_photos.append(msg["file"])
+        for message in self.data["messages"]:
+            from_id = message.get("from_id")
+            if from_id == self.bot_id:
+                if "photo" in message:
+                    temp_files.append(message["photo"])
+                elif "file" in message:
+                    temp_files.append(message["file"])
+            elif from_id == self.user_id:
+                text = message.get("text")
 
-            # Обработка ответов пользователя (реакции на профили)
-            else:
-                text = msg.get("text")
-
-                # Пропускаем исключенные сообщения
-                if text in self.parse_exception:
+                if not text or text in self.parse_exception:
                     continue
+                profile_liked = 0 if text == "👎" else 1
 
-                # Обрабатываем только лайки и дизлайки
-                if text not in {"❤️", "👎"}:
-                    continue
-
-                # Определяем метку: 1 для лайка, 0 для дизлайка
-                profile_liked = 1 if text == "❤️" else 0
-                final_label = profile_liked
-
-                # Добавляем каждую фотографию профиля в датасет
-                for idx, photo_path in enumerate(current_profile_photos):
+                for idx, file_path in enumerate(temp_files):
                     rows.append({
                         "profile_id": profile_id,
-                        "image_path": photo_path,
+                        "image_path": file_path,
                         "image_index": idx,
-                        "profile_liked": final_label
+                        "profile_liked": profile_liked,
                     })
 
-                profile_id += 1  # Переходим к следующему профилю
-                current_profile_photos = []  # Очищаем список фотографий
+                if temp_files:
+                    profile_id += 1
+                temp_files = []
 
         return pd.DataFrame(
             rows,
-            columns=["profile_id", "image_path", "image_index", "profile_liked"]
+            columns=[
+                "profile_id",
+                "image_path",
+                "image_index",
+                "profile_liked",
+            ],
         )
 
-    def export_to_csv(self, output_path="files/processed/dv_dataset_raw.csv"):
-        """
-        Экспортирует построенный датасет в CSV-файл.
-
-        Метод вызывает build_dataset() и сохраняет результат в указанный CSV-файл.
-
-        Args:
-            output_path (str): Путь для сохранения CSV-файла (по умолчанию "files/processed/dv_dataset_raw.csv")
-        """
+    def export_to_csv(self, output_path=DV_RAW_CSV):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         df = self.build_dataset()
         df.to_csv(output_path, index=False, encoding="utf-8")
+
+    def __del__(self):
+        self.jsonFd.close()

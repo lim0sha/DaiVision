@@ -81,7 +81,6 @@ def process_video_rows():
         # Создаем новую строку с обновленным путем к изображению
         new_row = row.copy()
         new_row["image_path"] = f"photos_extracted/{photo_name}"
-        new_row["image_index"] = 0
 
         new_rows.append(new_row)
 
